@@ -78,7 +78,11 @@ public class UserView extends VerticalLayout {
 
             if (validateUserInput(firstName, lastName, email)) {
                 if (user == null) {
-                    User newUser = new User(firstName, lastName, email);
+                    User newUser = new User();
+                    
+                    newUser.setFirstName(firstName);
+                    newUser.setLastName(lastName);
+                    newUser.setEmail(email);
                     userService.saveUser(newUser);
                     Notification.show("User added!", 3000, Notification.Position.TOP_CENTER);
                 } else {
