@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>  <!-- Maven project descriptor version -->
+
+	<parent>  
+		<groupId>org.springframework.boot</groupId>  <!-- Parent project group ID -->
+		<artifactId>spring-boot-starter-parent</artifactId>  <!-- Parent project artifact ID -->
+		<version>3.3.4</version>  <!-- Version of the parent starter project -->
+		<relativePath/>  <!-- Lookup parent POM from the repository -->
+	</parent>
+
+	<groupId>com.manulife</groupId>  <!-- Group ID representing the organization or company -->
+	<artifactId>backend</artifactId>  <!-- Artifact ID for the backend project -->
+	<version>0.0.1-SNAPSHOT</version>  <!-- Project version, with '-SNAPSHOT' indicating a work-in-progress version -->
+	<packaging>war</packaging>  <!-- Project packaging type as a WAR (Web Application Archive) -->
+	<name>backend</name>  <!-- Name of the project -->
+	<description>Take home test project for Spring Boot, Vaadin and JasperReports</description>  <!-- Project description -->
+
+	<url/>  <!-- Optional URL for project information (left empty) -->
+	<licenses>
+		<license/>  <!-- License information placeholder -->
+	</licenses>
+	<developers>
+		<developer/>  <!-- Developer information placeholder -->
+	</developers>
+
+	<scm>  <!-- Source control management section -->
+		<connection/>  <!-- Connection URL to the source control repository -->
+		<developerConnection/>  <!-- Developer connection URL to the repository -->
+		<tag/>  <!-- SCM tag to specify a release version (left empty) -->
+		<url/>  <!-- URL of the project's source code repository -->
+	</scm>
+
+	<properties>
+		<java.version>17</java.version>  <!-- Specify the Java version to use -->
+		<vaadin.version>24.4.13</vaadin.version>  <!-- Define Vaadin version for the project -->
+	</properties>
+
+	<dependencies>  <!-- Project dependencies section -->
+		<!-- Spring Boot Data JPA for working with relational databases -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<!-- Spring Boot Starter Web for building web applications and REST APIs -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- Spring Boot Tomcat Starter for embedding a Tomcat server -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+			<scope>provided</scope>  <!-- Provided scope: Tomcat will be supplied by the server environment -->
+		</dependency>
+
+		<!-- Spring Boot Test for unit and integration testing -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>  <!-- Test scope: Only available during testing phases -->
+		</dependency>
+
+		<!-- Vaadin Spring Boot Starter for building modern UI with Vaadin -->
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-spring-boot-starter</artifactId>
+		</dependency>
+
+		<!-- H2 Database for in-memory testing -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>  <!-- Runtime scope: Only needed during execution -->
+		</dependency>
+
+		<!-- Lombok to reduce boilerplate code (e.g., getters and setters) -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>  <!-- Optional: Not required at runtime -->
+		</dependency>
+
+		<!-- JasperReports for generating reports -->
+	    <dependency>
+	        <groupId>net.sf.jasperreports</groupId>
+	        <artifactId>jasperreports</artifactId>
+	        <version>6.20.0</version>
+	    </dependency>
+	</dependencies>
+
+	<dependencyManagement>  <!-- Centralized dependency management -->
+		<dependencies>
+			<!-- Vaadin BOM (Bill of Materials) for version management -->
+			<dependency>
+				<groupId>com.vaadin</groupId>
+				<artifactId>vaadin-bom</artifactId>
+				<version>${vaadin.version}</version>  <!-- Use the Vaadin version property -->
+				<type>pom</type>  <!-- Type is POM to manage dependencies -->
+				<scope>import</scope>  <!-- Import scope for dependency management -->
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<!-- Spring Boot Maven Plugin to package and run the application -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>  <!-- Exclude certain dependencies -->
+						<exclude>
+							<groupId>org.projectlombok</groupId>  
+							<artifactId>lombok</artifactId>  
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>  <!-- Maven profiles for different build configurations -->
+		<profile>
+			<id>production</id>  <!-- Production profile -->
+			<dependencies>
+				<!-- Vaadin Core excluding development tools -->
+				<dependency>
+					<groupId>com.vaadin</groupId>
+					<artifactId>vaadin-core</artifactId>
+					<exclusions>
+						<exclusion>
+							<groupId>com.vaadin</groupId>
+							<artifactId>vaadin-dev</artifactId>  <!-- Exclude development tools -->
+						</exclusion>
+					</exclusions>
+				</dependency>
+			</dependencies>
+			<build>
+				<plugins>
+					<!-- Vaadin Maven Plugin for frontend management -->
+					<plugin>
+						<groupId>com.vaadin</groupId>
+						<artifactId>vaadin-maven-plugin</artifactId>
+						<version>${vaadin.version}</version>  <!-- Use the Vaadin version property -->
+						<executions>
+							<execution>
+								<id>frontend</id>  <!-- Frontend build execution -->
+								<phase>compile</phase>  <!-- Run during the compile phase -->
+								<goals>
+									<goal>prepare-frontend</goal>  <!-- Prepare frontend assets -->
+									<goal>build-frontend</goal>  <!-- Build frontend resources -->
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>
