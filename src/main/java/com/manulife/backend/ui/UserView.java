@@ -9,12 +9,10 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.EmailField; // Use EmailField for validation
+import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.Optional;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -35,10 +33,16 @@ public class UserView extends VerticalLayout {
         userGrid.setItems(userService.getAllUsers());
         userGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
+        // Adding Delete button to each row
+        userGrid.addComponentColumn(user -> {
+            Button deleteButton = new Button("Delete", e -> confirmDeleteUser(user));
+            return deleteButton;
+        }).setHeader("Actions");
+
         // Create buttons
         Button addButton = new Button("Add User", e -> openAddUserDialog());
         Button reportButton = new Button("Generate Report", e -> generateReport());
-        
+
         // Add buttons above the grid
         HorizontalLayout buttonLayout = new HorizontalLayout(addButton, reportButton);
         add(buttonLayout, userGrid);
@@ -59,7 +63,7 @@ public class UserView extends VerticalLayout {
     private VerticalLayout createUserForm(User user, Dialog dialog) {
         TextField firstNameField = new TextField("First Name");
         TextField lastNameField = new TextField("Last Name");
-        EmailField emailField = new EmailField("Email"); // Use EmailField for email validation
+        EmailField emailField = new EmailField("Email");
 
         if (user != null) {
             firstNameField.setValue(user.getFirstName());
@@ -74,13 +78,14 @@ public class UserView extends VerticalLayout {
 
             if (validateUserInput(firstName, lastName, email)) {
                 if (user == null) {
-                    userService.addUser(new User(firstName, lastName, email));
+                    User newUser = new User(firstName, lastName, email);
+                    userService.saveUser(newUser);
                     Notification.show("User added!", 3000, Notification.Position.TOP_CENTER);
                 } else {
                     user.setFirstName(firstName);
                     user.setLastName(lastName);
                     user.setEmail(email);
-                    userService.updateUser(user);
+                    userService.updateUser(user.getId(), user);
                     Notification.show("User updated!", 3000, Notification.Position.TOP_CENTER);
                 }
                 refreshGrid();
@@ -119,9 +124,8 @@ public class UserView extends VerticalLayout {
 
     private void generateReport() {
         try {
-            byte[] pdfContent = reportService.generateUserReport();
+            byte[] pdfContent = userService.generateUserReport();
 
-            // Save the PDF to a file
             try (FileOutputStream out = new FileOutputStream("user_report.pdf")) {
                 out.write(pdfContent);
             }
@@ -141,37 +145,15 @@ public class UserView extends VerticalLayout {
         );
 
         Button deleteButton = new Button("Delete", e -> {
-            userService.deleteUser(user.getId());  // Implement deleteUser in UserService
+            userService.deleteUser(user.getId());
             refreshGrid();
             confirmation.close();
             Notification.show("User deleted!", 3000, Notification.Position.TOP_CENTER);
         });
-        
+
         Button cancelButton = new Button("Cancel", e -> confirmation.close());
 
         confirmation.add(deleteButton, cancelButton);
         confirmation.open();
-    }
-
-    public UserView(UserService userService) {
-        this.userService = userService;
-
-        // Configure Grid with User data
-        userGrid.setColumns("id", "firstName", "lastName", "email");
-        userGrid.setItems(userService.getAllUsers());
-        
-        // Adding Delete button to each row
-        userGrid.addComponentColumn(user -> {
-            Button deleteButton = new Button("Delete", e -> confirmDeleteUser(user));
-            return deleteButton;
-        }).setHeader("Actions");
-
-        // Create buttons
-        Button addButton = new Button("Add User", e -> openAddUserDialog());
-        Button reportButton = new Button("Generate Report", e -> generateReport());
-        
-        // Add buttons above the grid
-        HorizontalLayout buttonLayout = new HorizontalLayout(addButton, reportButton);
-        add(buttonLayout, userGrid);
     }
 }
