@@ -11,6 +11,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,6 +24,7 @@ public class UserView extends VerticalLayout {
 
     private final UserService userService;
     private final Grid<User> userGrid = new Grid<>(User.class);
+    private final TextField filterText = new TextField();
 
     @Autowired
     public UserView(UserService userService) {
@@ -30,22 +32,41 @@ public class UserView extends VerticalLayout {
 
         // Configure Grid with User data
         userGrid.setColumns("id", "firstName", "lastName", "email");
-        userGrid.setItems(userService.getAllUsers());
+        ListDataProvider<User> dataProvider = new ListDataProvider<>(userService.getAllUsers());
+        userGrid.setDataProvider(dataProvider);
         userGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
-        // Adding Delete button to each row
+        // Adding Update and Delete buttons to each row
         userGrid.addComponentColumn(user -> {
+            Button updateButton = new Button("Update", e -> openUpdateUserDialog(user));
             Button deleteButton = new Button("Delete", e -> confirmDeleteUser(user));
-            return deleteButton;
+            HorizontalLayout actionLayout = new HorizontalLayout(updateButton, deleteButton);
+            return actionLayout;
         }).setHeader("Actions");
 
         // Create buttons
         Button addButton = new Button("Add User", e -> openAddUserDialog());
         Button reportButton = new Button("Generate Report", e -> generateReport());
 
-        // Add buttons above the grid
+        // Add a filter text field
+        filterText.setPlaceholder("Filter by name or email...");
+        filterText.addValueChangeListener(event -> updateList(dataProvider));
+        
+        // Add buttons and filter field above the grid
         HorizontalLayout buttonLayout = new HorizontalLayout(addButton, reportButton);
-        add(buttonLayout, userGrid);
+        add(filterText, buttonLayout, userGrid);
+    }
+
+    private void updateList(ListDataProvider<User> dataProvider) {
+        String filter = filterText.getValue();
+        if (filter == null || filter.isEmpty()) {
+            dataProvider.setFilter(null);
+        } else {
+            dataProvider.setFilter(user -> 
+                user.getFirstName().toLowerCase().contains(filter.toLowerCase()) || 
+                user.getLastName().toLowerCase().contains(filter.toLowerCase()) ||
+                user.getEmail().toLowerCase().contains(filter.toLowerCase()));
+        }
     }
 
     private void openAddUserDialog() {
@@ -79,7 +100,6 @@ public class UserView extends VerticalLayout {
             if (validateUserInput(firstName, lastName, email)) {
                 if (user == null) {
                     User newUser = new User();
-                    
                     newUser.setFirstName(firstName);
                     newUser.setLastName(lastName);
                     newUser.setEmail(email);
