@@ -25,59 +25,66 @@ public class UserView extends VerticalLayout {
     private final UserService userService;
     private final Grid<User> userGrid = new Grid<>(User.class);
     private final TextField filterText = new TextField();
+    private final ListDataProvider<User> dataProvider;
 
     @Autowired
     public UserView(UserService userService) {
         this.userService = userService;
+        this.dataProvider = new ListDataProvider<>(userService.getAllUsers());
 
         // Configure Grid with User data
         userGrid.setColumns("id", "firstName", "lastName", "email");
-        ListDataProvider<User> dataProvider = new ListDataProvider<>(userService.getAllUsers());
         userGrid.setDataProvider(dataProvider);
         userGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
         // Adding Update and Delete buttons to each row
         userGrid.addComponentColumn(user -> {
-            Button updateButton = new Button("Update", e -> openUpdateUserDialog(user));
+            Button updateButton = new Button("Update", e -> openUserDialog(user));
             Button deleteButton = new Button("Delete", e -> confirmDeleteUser(user));
             HorizontalLayout actionLayout = new HorizontalLayout(updateButton, deleteButton);
             return actionLayout;
         }).setHeader("Actions");
 
         // Create buttons
-        Button addButton = new Button("Add User", e -> openAddUserDialog());
+        Button addButton = new Button("Add User", e -> openUserDialog(null));
         Button reportButton = new Button("Generate Report", e -> generateReport());
 
-        // Add a filter text field
+        // Configure filter text field with a clear button
         filterText.setPlaceholder("Filter by name or email...");
-        filterText.addValueChangeListener(event -> updateList(dataProvider));
-        
-        // Add buttons and filter field above the grid
-        HorizontalLayout buttonLayout = new HorizontalLayout(addButton, reportButton);
-        add(filterText, buttonLayout, userGrid);
+        filterText.setClearButtonVisible(true);
+        filterText.addValueChangeListener(event -> updateList());
+
+        // Layout for buttons and filter text field
+        HorizontalLayout toolbarLayout = new HorizontalLayout(filterText, addButton, reportButton);
+        toolbarLayout.setWidthFull();
+        toolbarLayout.setAlignItems(Alignment.CENTER);
+
+        // Add toolbar and grid to the main layout
+        add(toolbarLayout, userGrid);
     }
 
-    private void updateList(ListDataProvider<User> dataProvider) {
-        String filter = filterText.getValue();
-        if (filter == null || filter.isEmpty()) {
-            dataProvider.setFilter(null);
-        } else {
-            dataProvider.setFilter(user -> 
-                user.getFirstName().toLowerCase().contains(filter.toLowerCase()) || 
-                user.getLastName().toLowerCase().contains(filter.toLowerCase()) ||
-                user.getEmail().toLowerCase().contains(filter.toLowerCase()));
-        }
+    private void updateList() {
+        String filter = filterText.getValue().trim().toLowerCase();
+    
+        // Apply filter directly and update the grid's items
+        userGrid.setItems(userService.getAllUsers().stream()
+            .filter(user ->
+                user.getFirstName().toLowerCase().contains(filter) ||
+                user.getLastName().toLowerCase().contains(filter) ||
+                user.getEmail().toLowerCase().contains(filter))
+            .toList()
+        );
     }
 
-    private void openAddUserDialog() {
+    private void openUserDialog(User user) {
         Dialog dialog = new Dialog();
-        dialog.add(createUserForm(null, dialog));
-        dialog.open();
-    }
 
-    private void openUpdateUserDialog(User user) {
-        Dialog dialog = new Dialog();
-        dialog.add(createUserForm(user, dialog));
+        // Set dialog title based on action
+        String title = (user == null) ? "Add User" : "Update User";
+        dialog.setHeaderTitle(title);
+
+        VerticalLayout formLayout = createUserForm(user, dialog);
+        dialog.add(formLayout);
         dialog.open();
     }
 
@@ -86,26 +93,28 @@ public class UserView extends VerticalLayout {
         TextField lastNameField = new TextField("Last Name");
         EmailField emailField = new EmailField("Email");
 
+        // Pre-fill the form if updating an existing user
         if (user != null) {
             firstNameField.setValue(user.getFirstName());
             lastNameField.setValue(user.getLastName());
             emailField.setValue(user.getEmail());
         }
 
+        // Save button to handle both Add and Update actions
         Button saveButton = new Button(user == null ? "Add User" : "Update User", e -> {
             String firstName = firstNameField.getValue();
             String lastName = lastNameField.getValue();
             String email = emailField.getValue();
 
             if (validateUserInput(firstName, lastName, email)) {
-                if (user == null) {
+                if (user == null) {  // Add new user
                     User newUser = new User();
                     newUser.setFirstName(firstName);
                     newUser.setLastName(lastName);
                     newUser.setEmail(email);
                     userService.saveUser(newUser);
                     Notification.show("User added!", 3000, Notification.Position.TOP_CENTER);
-                } else {
+                } else {  // Update existing user
                     user.setFirstName(firstName);
                     user.setLastName(lastName);
                     user.setEmail(email);
@@ -113,7 +122,7 @@ public class UserView extends VerticalLayout {
                     Notification.show("User updated!", 3000, Notification.Position.TOP_CENTER);
                 }
                 refreshGrid();
-                dialog.close();
+                dialog.close();  // Close dialog after saving
             }
         });
 
@@ -131,12 +140,8 @@ public class UserView extends VerticalLayout {
             Notification.show("Last Name is required.", 3000, Notification.Position.TOP_CENTER);
             return false;
         }
-        if (email == null || email.isEmpty()) {
-            Notification.show("Email is required.", 3000, Notification.Position.TOP_CENTER);
-            return false;
-        }
-        if (!email.contains("@")) {
-            Notification.show("Please enter a valid email address.", 3000, Notification.Position.TOP_CENTER);
+        if (email == null || email.isEmpty() || !email.contains("@")) {
+            Notification.show("Valid Email is required.", 3000, Notification.Position.TOP_CENTER);
             return false;
         }
         return true;
