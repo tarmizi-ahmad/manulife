@@ -15,9 +15,15 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+
 import net.sf.jasperreports.engine.JRException;
+import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.server.StreamResource;
 
 @Route("users") // Accessible at http://localhost:8080/users
 public class UserView extends VerticalLayout {
@@ -26,6 +32,8 @@ public class UserView extends VerticalLayout {
     private final Grid<User> userGrid = new Grid<>(User.class);
     private final TextField filterText = new TextField();
     private final ListDataProvider<User> dataProvider;
+
+    private VerticalLayout downloadLayout = new VerticalLayout();
 
     @Autowired
     public UserView(UserService userService) {
@@ -47,7 +55,10 @@ public class UserView extends VerticalLayout {
 
         // Create buttons
         Button addButton = new Button("Add User", e -> openUserDialog(null));
+        addButton.getElement().getStyle().set("cursor", "pointer");
+
         Button reportButton = new Button("Generate Report", e -> generateReport());
+        reportButton.getElement().getStyle().set("cursor", "pointer");
 
         // Configure filter text field with a clear button
         filterText.setPlaceholder("Filter by name or email...");
@@ -85,6 +96,15 @@ public class UserView extends VerticalLayout {
 
         VerticalLayout formLayout = createUserForm(user, dialog);
         dialog.add(formLayout);
+
+        // Add an 'X' icon button at the top-right corner for closing the dialog
+        Button closeButton = new Button(new Icon(VaadinIcon.CLOSE), event -> dialog.close());
+        closeButton.getElement().setAttribute("theme", "tertiary icon"); // Styling for icon-only button
+        closeButton.getElement().getStyle().set("cursor", "pointer");
+
+        // Add the close button to the dialog header
+        dialog.getHeader().add(closeButton);
+
         dialog.open();
     }
 
@@ -125,8 +145,20 @@ public class UserView extends VerticalLayout {
                 dialog.close();  // Close dialog after saving
             }
         });
+        saveButton.getElement().getStyle().set("cursor", "pointer");
 
-        VerticalLayout formLayout = new VerticalLayout(firstNameField, lastNameField, emailField, saveButton);
+        // Cancel button to close the dialog without saving
+        Button cancelButton = new Button("Cancel", e -> dialog.close());
+        cancelButton.getElement().getStyle().set("cursor", "pointer");
+
+        // Layout for Save and Cancel buttons
+        HorizontalLayout buttonLayout = new HorizontalLayout(saveButton, cancelButton);
+        buttonLayout.setSpacing(true);
+
+        // Add all components to the form layout
+        VerticalLayout formLayout = new VerticalLayout(
+            firstNameField, lastNameField, emailField, buttonLayout
+        );
         formLayout.setPadding(true);
         return formLayout;
     }
@@ -153,13 +185,34 @@ public class UserView extends VerticalLayout {
 
     private void generateReport() {
         try {
+            // 1. Generate PDF content
             byte[] pdfContent = userService.generateUserReport();
 
-            try (FileOutputStream out = new FileOutputStream("user_report.pdf")) {
+            // 2. Save PDF to resources/reports directory
+            String filePath = "src/main/resources/reports/user_report.pdf";
+            try (FileOutputStream out = new FileOutputStream(filePath)) {
                 out.write(pdfContent);
             }
 
+            // 3. Create StreamResource for downloading the PDF
+            StreamResource resource = new StreamResource("user_report.pdf",
+                () -> new ByteArrayInputStream(pdfContent));
+
+            // 4. Create Anchor with download link
+            Anchor downloadLink = new Anchor(resource, "Click here to download the report");
+            downloadLink.getElement().setAttribute("download", true);
+            
+            // Clear previous download links before adding new one
+            downloadLayout.removeAll();
+            downloadLayout.add(downloadLink); // Add the new link to the layout
+
+            // 5. Show notification
             Notification.show("Report generated successfully!", 3000, Notification.Position.TOP_CENTER);
+            
+            // Add the download layout to the main layout (if not already added)
+            if (!this.getChildren().anyMatch(component -> component == downloadLayout)) {
+                add(downloadLayout);
+            }
 
         } catch (JRException | IOException e) {
             Notification.show("Error generating report: " + e.getMessage(), 5000, Notification.Position.TOP_CENTER);
@@ -179,8 +232,10 @@ public class UserView extends VerticalLayout {
             confirmation.close();
             Notification.show("User deleted!", 3000, Notification.Position.TOP_CENTER);
         });
+        deleteButton.getElement().getStyle().set("cursor", "pointer");
 
         Button cancelButton = new Button("Cancel", e -> confirmation.close());
+        cancelButton.getElement().getStyle().set("cursor", "pointer");
 
         confirmation.add(deleteButton, cancelButton);
         confirmation.open();

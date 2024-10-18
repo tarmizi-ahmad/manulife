@@ -10,6 +10,7 @@
     <field name="lastName" class="java.lang.String"/>
     <field name="email" class="java.lang.String"/>
 
+    <!-- Title Section -->
     <title>
         <band height="50">
             <textField>
@@ -22,20 +23,70 @@
         </band>
     </title>
 
+    <!-- Column Header Section -->
+    <columnHeader>
+        <band height="30">
+            <frame>
+                <reportElement x="0" y="0" width="555" height="30" backcolor="#d3d3d3" mode="Opaque"/>
+                <staticText>
+                    <reportElement x="0" y="0" width="150" height="30"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[First Name]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="150" y="0" width="150" height="30"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Last Name]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="300" y="0" width="250" height="30"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle">
+                        <font isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Email]]></text>
+                </staticText>
+            </frame>
+        </band>
+    </columnHeader>
+
+    <!-- Detail Section (Table Rows) -->
     <detail>
         <band height="20">
-            <textField>
-                <reportElement x="0" y="0" width="150" height="20"/>
-                <textFieldExpression><![CDATA[$F{firstName}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="150" y="0" width="150" height="20"/>
-                <textFieldExpression><![CDATA[$F{lastName}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="300" y="0" width="250" height="20"/>
-                <textFieldExpression><![CDATA[$F{email}]]></textFieldExpression>
-            </textField>
+            <frame>
+                <reportElement x="0" y="0" width="555" height="20" backcolor="#ffffff" mode="Opaque"/>
+                <textField>
+                    <reportElement x="0" y="0" width="150" height="20"/>
+                    <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$F{firstName}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement x="150" y="0" width="150" height="20"/>
+                    <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$F{lastName}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement x="300" y="0" width="250" height="20"/>
+                    <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$F{email}]]></textFieldExpression>
+                </textField>
+            </frame>
         </band>
     </detail>
+
+    <!-- Page Footer (Optional) -->
+    <pageFooter>
+        <band height="20">
+            <textField>
+                <reportElement x="0" y="0" width="555" height="20"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="10"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
 </jasperReport>
